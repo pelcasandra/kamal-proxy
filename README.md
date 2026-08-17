@@ -181,6 +181,10 @@ or:
 
 ## Building
 
+Planazo fork releases use the `v0.9.2.N-planazo` tag format. The additional
+numeric component keeps the tag compatible with Kamal's minimum-version check
+while preserving the exact upstream version in the release name.
+
 To build Kamal Proxy locally, if you have a working Go environment you can:
 
     make
