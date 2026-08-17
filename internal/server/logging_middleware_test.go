@@ -30,7 +30,7 @@ func TestMiddleware_LoggingMiddleware(t *testing.T) {
 		fmt.Fprintln(w, "goodbye")
 	})
 
-	middleware := WithLoggingMiddleware(logger, 80, 443, handler)
+	middleware := WithLoggingMiddleware(logger, 80, 443, true, handler)
 
 	req := httptest.NewRequest("POST", "http://app.example.com/somepath?q=ok", bytes.NewReader([]byte("hello")))
 	req.Header.Set("X-Request-ID", "request-id")
@@ -97,4 +97,26 @@ func TestMiddleware_LoggingMiddleware(t *testing.T) {
 	assert.Equal(t, "goodbye", logline.RespXCustom)
 	assert.Equal(t, "HTTP/1.1", logline.Proto)
 	assert.Equal(t, "http", logline.Scheme)
+}
+
+func TestMiddleware_LoggingMiddlewareRedactsQuery(t *testing.T) {
+	out := &strings.Builder{}
+	logger := slog.New(slog.NewJSONHandler(out, nil))
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
+	middleware := WithLoggingMiddleware(logger, 80, 443, false, handler)
+	req := httptest.NewRequest("GET", "http://app.example.com/callback?msisdn=private&body=secret", nil)
+
+	middleware.ServeHTTP(httptest.NewRecorder(), req)
+
+	logline := struct {
+		Query string `json:"query"`
+	}{}
+
+	err := json.NewDecoder(strings.NewReader(out.String())).Decode(&logline)
+	require.NoError(t, err)
+	assert.Equal(t, "[REDACTED]", logline.Query)
+	assert.NotContains(t, out.String(), "msisdn")
+	assert.NotContains(t, out.String(), "private")
+	assert.NotContains(t, out.String(), "secret")
 }

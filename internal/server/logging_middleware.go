@@ -28,14 +28,16 @@ type LoggingMiddleware struct {
 	logger    *slog.Logger
 	httpPort  int
 	httpsPort int
+	logQuery  bool
 	next      http.Handler
 }
 
-func WithLoggingMiddleware(logger *slog.Logger, httpPort, httpsPort int, next http.Handler) http.Handler {
+func WithLoggingMiddleware(logger *slog.Logger, httpPort, httpsPort int, logQuery bool, next http.Handler) http.Handler {
 	return &LoggingMiddleware{
 		logger:    logger,
 		httpPort:  httpPort,
 		httpsPort: httpsPort,
+		logQuery:  logQuery,
 		next:      next,
 	}
 }
@@ -98,7 +100,11 @@ func (h *LoggingMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			slog.String("user_agent", r.Header.Get("User-Agent")),
 			slog.String("proto", r.Proto),
 			slog.String("scheme", scheme),
-			slog.String("query", r.URL.RawQuery),
+		}
+		if h.logQuery {
+			attrs = append(attrs, slog.String("query", r.URL.RawQuery))
+		} else {
+			attrs = append(attrs, slog.String("query", "[REDACTED]"))
 		}
 
 		attrs = append(attrs, h.retrieveCustomHeaders(loggingRequestContext.RequestHeaders, r.Header, "req")...)
