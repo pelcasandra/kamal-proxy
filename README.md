@@ -163,6 +163,21 @@ example:
 
     KAMAL_PROXY_HTTP_PORT=8080 kamal-proxy run
 
+### Query-string logging
+
+Raw URL query strings are redacted from request logs by default because they can
+contain credentials or personal data. The JSON log field remains present as
+`"query":"[REDACTED]"` so log consumers keep a stable schema.
+
+If an installation has reviewed the privacy impact and explicitly needs the raw
+query string, it can opt in with either:
+
+    kamal-proxy run --log-query
+
+or:
+
+    KAMAL_PROXY_LOG_QUERY=true kamal-proxy run
+
 
 ## Building
 
